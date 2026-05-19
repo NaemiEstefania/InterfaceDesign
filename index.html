@@ -3,23 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>INFINITE PATH – Scroll Into Light</title>
+  <title>Infinite Light Worlds</title>
+  <!-- v4: Sound · Starfield · Größeres Licht · Cinematische Übergänge -->
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-
-  <!-- Startscreen -->
-  <div id="startscreen">
-    <p class="start-title">INFINITE PATH</p>
-    <p class="start-sub">scroll into light</p>
+  <div id="app">
+    <canvas id="trail-canvas"></canvas>
+    <canvas id="particle-canvas"></canvas>
+    <div id="world-bg"></div>
+    <div id="warp-lines"></div>
+    <div id="liquid-overlay"></div>
+    <div id="atmosphere"></div>
+    <div id="light-core">
+      <div id="light-inner"></div>
+      <div id="light-glow"></div>
+      <div id="light-halo"></div>
+    </div>
+    <div id="flash-overlay"></div>
+    <div id="cursor"></div>
+    <div id="hint">move</div>
   </div>
-
-  <!-- Hauptszene -->
-  <div id="scene">
-    <canvas id="canvas"></canvas>
-    <div id="message"></div>
-  </div>
-
   <script src="script.js"></script>
 </body>
 </html>

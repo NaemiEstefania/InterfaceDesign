@@ -1,99 +1,391 @@
-*, *::before, *::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-  
-  :root {
-    --font: 'Courier New', Courier, monospace;
-  }
-  
-  html, body {
-    width: 100%;
-    height: 100%;
-    background: #000;
-    overflow: hidden;
-  }
-  
-  /* =====================
-     STARTSCREEN
-  ===================== */
-  #startscreen {
-    position: fixed;
-    inset: 0;
-    z-index: 50;
-    background: #000;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-    transition: opacity 0.8s ease;
-    cursor: pointer;
-  }
-  
-  #startscreen.hidden {
-    opacity: 0;
-    pointer-events: none;
-  }
-  
-  .start-title {
-    font-family: var(--font);
-    font-size: clamp(13px, 2vw, 16px);
-    letter-spacing: 0.65em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.85);
-    font-weight: normal;
-  }
-  
-  .start-sub {
-    font-family: var(--font);
-    font-size: 10px;
-    letter-spacing: 0.55em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.2);
-    animation: blink 2.4s ease-in-out infinite;
-  }
-  
-  @keyframes blink {
-    0%, 100% { opacity: 0.2; }
-    50%       { opacity: 0.7; }
-  }
-  
-  /* =====================
-     SZENE
-  ===================== */
-  #scene {
-    position: fixed;
-    inset: 0;
-    width: 100vw;
-    height: 100vh;
-    cursor: pointer;
-  }
-  
-  canvas {
-    display: block;
-    width: 100%;
-    height: 100%;
-  }
-  
-  /* =====================
-     NACHRICHT
-  ===================== */
-  #message {
-    position: absolute;
-    left: 50%;
-    top: 65%;
-    transform: translate(-50%, -50%);
-    font-family: var(--font);
-    font-size: clamp(11px, 1.4vw, 13px);
-    letter-spacing: 0.3em;
-    text-transform: lowercase;
-    color: rgba(255, 255, 255, 0);
-    text-align: center;
-    line-height: 2.2;
-    pointer-events: none;
-    white-space: nowrap;
-    z-index: 10;
-    transition: none;
-  }
+/* ============================================================
+   INFINITE LIGHT WORLDS — style.css  v4
+   5 Welten: VOID SPACE · COSMIC STREAM · LIQUID LIGHT · BLOOM SPACE · STARFIELD
+   ============================================================ */
+
+   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+   html, body {
+     width: 100%; height: 100%;
+     overflow: hidden;
+     background: #000;
+     font-family: 'Georgia', serif;
+     cursor: none;
+     user-select: none;
+     -webkit-user-select: none;
+     touch-action: none;
+   }
+   
+   #app {
+     position: fixed;
+     inset: 0;
+     overflow: hidden;
+   }
+   
+   /* ── Canvas-Schichten ────────────────────────────────────── */
+   #trail-canvas {
+     position: absolute; inset: 0;
+     width: 100%; height: 100%;
+     z-index: 1; pointer-events: none;
+   }
+   #particle-canvas {
+     position: absolute; inset: 0;
+     width: 100%; height: 100%;
+     z-index: 2; pointer-events: none;
+   }
+   
+   /* ── Welt-Hintergrund ────────────────────────────────────── */
+   #world-bg {
+     position: absolute; inset: 0;
+     z-index: 0;
+     transition: background 2.2s ease;
+   }
+   
+   /* VOID SPACE — absolute Schwärze, kein Streifen-Pseudo-Element */
+   #app.world-0 #world-bg {
+     background: #000;
+   }
+   
+   /* COSMIC STREAM */
+   #app.world-1 #world-bg {
+     background:
+       radial-gradient(ellipse 100% 100% at 50% 50%, #00001c 0%, #00000a 55%, #000 100%);
+   }
+   
+   /* LIQUID LIGHT — dunkles Teal, kein weißes Licht mehr */
+   #app.world-2 #world-bg {
+     background:
+       radial-gradient(ellipse 130% 100% at 50% 60%, #001014 0%, #000a0e 45%, #000 100%);
+   }
+   
+   /* BLOOM SPACE — warmes, tiefes Dunkelrot-Bernstein */
+   #app.world-3 #world-bg {
+     background:
+       radial-gradient(ellipse 120% 100% at 50% 60%, #0e0400 0%, #080200 45%, #000 100%);
+   }
+   
+   /* STARFIELD — tiefstes Weltraum-Schwarz mit zartem Blau-Schleier */
+   #app.world-4 #world-bg {
+     background:
+       radial-gradient(ellipse 120% 120% at 50% 50%, #00010a 0%, #00000f 45%, #000 100%);
+   }
+   
+   /* ── Atmosphären ─────────────────────────────────────────── */
+   #atmosphere {
+     position: absolute; inset: 0;
+     z-index: 3; pointer-events: none;
+     transition: opacity 1.8s ease;
+   }
+   
+   /* VOID: fast nichts – totale Leere */
+   #app.world-0 #atmosphere {
+     background: none;
+   }
+   
+   /* COSMIC */
+   #app.world-1 #atmosphere {
+     background:
+       radial-gradient(ellipse 90% 90% at 50% 50%, rgba(0,4,35,0.45) 0%, transparent 70%),
+       radial-gradient(ellipse 35% 35% at 15% 20%, rgba(40,15,100,0.12) 0%, transparent 60%),
+       radial-gradient(ellipse 35% 35% at 85% 75%, rgba(15,35,100,0.12) 0%, transparent 60%);
+   }
+   
+   /* LIQUID: gedämpfte Teal-Flächen — deutlich dunkler als v2 */
+   #app.world-2 #atmosphere {
+     background:
+       radial-gradient(ellipse 80% 60% at 25% 35%, rgba(0,50,65,0.12) 0%, transparent 65%),
+       radial-gradient(ellipse 60% 80% at 75% 65%, rgba(0,35,55,0.10) 0%, transparent 65%),
+       radial-gradient(ellipse 100% 45% at 50% 105%, rgba(0,18,35,0.4) 0%, transparent 55%);
+   }
+   
+   /* BLOOM: weiches warmes Glühen */
+   #app.world-3 #atmosphere {
+     background:
+       radial-gradient(ellipse 90% 70% at 50% 50%, rgba(60,20,0,0.25) 0%, transparent 65%),
+       radial-gradient(ellipse 50% 40% at 20% 70%, rgba(80,30,0,0.12) 0%, transparent 60%),
+       radial-gradient(ellipse 50% 40% at 80% 30%, rgba(60,40,0,0.1) 0%, transparent 60%),
+       radial-gradient(ellipse 100% 40% at 50% 110%, rgba(40,10,0,0.5) 0%, transparent 55%);
+   }
+   
+   /* STARFIELD: leichter blauer Raumschleier, zentriert */
+   #app.world-4 #atmosphere {
+     background:
+       radial-gradient(ellipse 70% 70% at 50% 50%, rgba(0,5,30,0.5) 0%, transparent 75%),
+       radial-gradient(ellipse 40% 30% at 20% 15%, rgba(10,20,60,0.12) 0%, transparent 55%),
+       radial-gradient(ellipse 40% 30% at 80% 85%, rgba(5,15,50,0.1) 0%, transparent 55%);
+   }
+   
+   /* ── Liquid-Shimmer-Overlay ──────────────────────────────── */
+   #liquid-overlay {
+     position: absolute; inset: 0;
+     z-index: 4; pointer-events: none;
+     opacity: 0; transition: opacity 1.5s ease;
+   }
+   #app.world-2 #liquid-overlay {
+     opacity: 1;
+     background:
+       radial-gradient(ellipse 140% 70% at 50% 50%,
+         transparent 35%,
+         rgba(0,70,85,0.04) 80%,
+         transparent 100%);
+     animation: liquidShimmer 9s ease-in-out infinite;
+   }
+   /* Bloom bekommt ein warmes Puls-Overlay */
+   #app.world-3 #liquid-overlay {
+     opacity: 1;
+     background:
+       radial-gradient(ellipse 120% 80% at 50% 50%,
+         transparent 30%,
+         rgba(80,30,0,0.05) 75%,
+         transparent 100%);
+     animation: bloomPulse 6s ease-in-out infinite;
+   }
+   @keyframes liquidShimmer {
+     0%, 100% { transform: scaleX(1)    scaleY(1);    opacity: 0.5; }
+     33%       { transform: scaleX(1.05) scaleY(0.97); opacity: 0.9; }
+     66%       { transform: scaleX(0.97) scaleY(1.04); opacity: 0.4; }
+   }
+   @keyframes bloomPulse {
+     0%, 100% { opacity: 0.5; transform: scale(1); }
+     50%       { opacity: 1;   transform: scale(1.04); }
+   }
+   
+   /* Starfield bekommt einen hauchzarten Tiefenfilm */
+   #app.world-4 #liquid-overlay {
+     opacity: 1;
+     background: radial-gradient(ellipse 200% 200% at 50% 50%,
+       transparent 40%, rgba(5,10,40,0.08) 85%, transparent 100%);
+     animation: starfieldDrift 18s ease-in-out infinite;
+   }
+   @keyframes starfieldDrift {
+     0%, 100% { transform: scale(1)   translateY(0px); opacity: 0.6; }
+     50%       { transform: scale(1.03) translateY(-8px); opacity: 1; }
+   }
+   
+   /* ── Das lebende Licht — Größen-Override für Screen-Fill ─── */
+   /* JS setzt width/height direkt; hier nur die Basis-Transition */
+   #light-inner, #light-glow, #light-halo {
+     transition: width 0.08s linear, height 0.08s linear;
+   }
+   
+   /* ── Das lebende Licht — Atem-Animationen ────────────────── */
+   #light-core {
+     position: absolute;
+     left: 50%; top: 40%;
+     /*transform: translate(-50%, -50%);*/
+     z-index: 10; pointer-events: none;
+     will-change: left, top;
+     animation: lightBreathe 3.8s ease-in-out infinite;
+   }
+   @keyframes lightBreathe {
+     0%   { filter: brightness(1)    saturate(1)    blur(0px); }
+     30%  { filter: brightness(1.18) saturate(1.12) blur(0px); }
+     60%  { filter: brightness(0.9)  saturate(0.93) blur(0.4px); }
+     100% { filter: brightness(1)    saturate(1)    blur(0px); }
+   }
+   
+   #light-inner {
+     position: absolute; border-radius: 50%;
+     background: #fff;
+     left: 50%; top: 50%;
+     transform: translate(-50%, -50%);
+     will-change: width, height, box-shadow;
+     animation: innerPulse 2.2s ease-in-out infinite;
+   }
+   @keyframes innerPulse {
+     0%, 100% { transform: translate(-50%,-50%) scale(1); }
+     50%       { transform: translate(-50%,-50%) scale(1.08); }
+   }
+   
+   #light-glow {
+     position: absolute; border-radius: 50%;
+     left: 50%; top: 50%;
+     transform: translate(-50%, -50%);
+     animation: glowPulse 3.8s ease-in-out infinite;
+   }
+   @keyframes glowPulse {
+     0%, 100% { transform: translate(-50%,-50%) scale(1);    opacity: var(--glow-op, 0.6); }
+     40%       { transform: translate(-50%,-50%) scale(1.05); opacity: calc(var(--glow-op, 0.6) * 1.25); }
+     70%       { transform: translate(-50%,-50%) scale(0.97); opacity: calc(var(--glow-op, 0.6) * 0.85); }
+   }
+   
+   #light-halo {
+     position: absolute; border-radius: 50%;
+     left: 50%; top: 50%;
+     transform: translate(-50%, -50%);
+     animation: haloPulse 5s ease-in-out infinite;
+   }
+   @keyframes haloPulse {
+     0%, 100% { transform: translate(-50%,-50%) scale(1);    opacity: var(--halo-op, 0.4); }
+     50%       { transform: translate(-50%,-50%) scale(1.08); opacity: calc(var(--halo-op, 0.4) * 1.3); }
+   }
+   
+   /* ── Licht-Farben ────────────────────────────────────────── */
+   
+   /* VOID: kaltes Eisweiß */
+   #app.world-0 #light-inner {
+     background: radial-gradient(circle, #fff 0%, #e4eeff 55%, #b8ccff 100%);
+     box-shadow:
+       0 0 5px   2px  rgba(255,255,255,0.95),
+       0 0 18px  7px  rgba(210,225,255,0.65),
+       0 0 60px  25px rgba(160,190,255,0.28),
+       0 0 130px 55px rgba(120,160,255,0.1);
+   }
+   #app.world-0 #light-glow {
+     background: radial-gradient(circle,
+       rgba(185,210,255,0.13) 0%, rgba(140,175,255,0.05) 55%, transparent 100%);
+   }
+   #app.world-0 #light-halo {
+     background: radial-gradient(circle,
+       rgba(155,190,255,0.04) 0%, transparent 70%);
+   }
+   
+   /* COSMIC: Weiß-Kern, violett-blauer Glow */
+   #app.world-1 #light-inner {
+     background: radial-gradient(circle, #fff 0%, #d8d0ff 40%, #7050ff 100%);
+     box-shadow:
+       0 0 8px   4px  rgba(255,255,255,1),
+       0 0 32px  14px rgba(170,140,255,0.85),
+       0 0 90px  45px rgba(90,60,220,0.55),
+       0 0 200px 90px rgba(50,30,160,0.28),
+       0 0 380px 170px rgba(20,10,90,0.14);
+   }
+   #app.world-1 #light-glow {
+     background: radial-gradient(circle,
+       rgba(190,160,255,0.22) 0%, rgba(110,85,230,0.11) 40%,
+       rgba(50,35,140,0.04) 70%, transparent 100%);
+   }
+   #app.world-1 #light-halo {
+     background: radial-gradient(circle,
+       rgba(130,100,255,0.08) 0%, rgba(70,50,200,0.03) 55%, transparent 100%);
+   }
+   
+   /* LIQUID: reduziertes Cyan – viel dunkler als v2 */
+   #app.world-2 #light-inner {
+     background: radial-gradient(circle, #fff 0%, #c8f8f4 40%, #009890 100%);
+     box-shadow:
+       0 0 8px   4px  rgba(255,255,255,0.95),
+       0 0 28px  12px rgba(60,200,185,0.65),
+       0 0 75px  38px rgba(0,145,155,0.38),
+       0 0 170px 80px rgba(0,85,115,0.18),
+       0 0 320px 150px rgba(0,50,85,0.08);
+   }
+   #app.world-2 #light-glow {
+     background: radial-gradient(circle,
+       rgba(50,210,195,0.15) 0%, rgba(0,155,170,0.07) 42%,
+       rgba(0,90,120,0.03) 68%, transparent 100%);
+   }
+   #app.world-2 #light-halo {
+     background: radial-gradient(circle,
+       rgba(0,175,190,0.05) 0%, transparent 70%);
+   }
+   
+   /* BLOOM: warmes Gold-Orange-Weiß */
+   #app.world-3 #light-inner {
+     background: radial-gradient(circle, #fff 0%, #fff0c8 40%, #ff9020 100%);
+     box-shadow:
+       0 0 10px  5px  rgba(255,255,255,1),
+       0 0 36px  15px rgba(255,200,80,0.85),
+       0 0 95px  48px rgba(255,130,20,0.5),
+       0 0 210px 95px rgba(200,80,0,0.25),
+       0 0 400px 180px rgba(120,40,0,0.12);
+   }
+   #app.world-3 #light-glow {
+     background: radial-gradient(circle,
+       rgba(255,200,80,0.22) 0%, rgba(255,130,20,0.11) 40%,
+       rgba(180,70,0,0.04) 70%, transparent 100%);
+   }
+   #app.world-3 #light-halo {
+     background: radial-gradient(circle,
+       rgba(255,160,30,0.08) 0%, rgba(180,80,0,0.03) 55%, transparent 100%);
+   }
+   
+   /* STARFIELD: kaltes Silber-Weiß-Blau, fast wie ein Stern */
+   #app.world-4 #light-inner {
+     background: radial-gradient(circle, #fff 0%, #e8f0ff 45%, #8ab0ff 100%);
+     box-shadow:
+       0 0 6px   3px  rgba(255,255,255,0.98),
+       0 0 25px  10px rgba(180,210,255,0.75),
+       0 0 80px  40px rgba(100,160,255,0.4),
+       0 0 200px 90px rgba(60,110,220,0.2),
+       0 0 450px 200px rgba(20,60,160,0.08);
+   }
+   #app.world-4 #light-glow {
+     background: radial-gradient(circle,
+       rgba(170,200,255,0.18) 0%, rgba(100,155,255,0.08) 45%,
+       rgba(50,100,200,0.03) 70%, transparent 100%);
+   }
+   #app.world-4 #light-halo {
+     background: radial-gradient(circle,
+       rgba(120,170,255,0.06) 0%, rgba(60,110,220,0.02) 55%, transparent 100%);
+   }
+   
+   /* ── Flash-Overlay — sanfter Portal-Übergang ─────────────── */
+   #flash-overlay {
+     position: absolute; inset: 0;
+     z-index: 100;
+     /* Radial vom Licht-Zentrum aus — kein hartes Weiß, sondern weiches Licht */
+     background: radial-gradient(circle at var(--flash-cx, 50%) var(--flash-cy, 40%),
+       rgba(255,255,255,1) 0%,
+       rgba(240,245,255,0.95) 25%,
+       rgba(220,235,255,0.7) 55%,
+       rgba(200,220,255,0.3) 80%,
+       transparent 100%);
+     opacity: 0; pointer-events: none;
+   }
+   #flash-overlay.flashing {
+     animation: doFlash 2.6s cubic-bezier(0.25, 0, 0.15, 1) forwards;
+   }
+   @keyframes doFlash {
+     0%   { opacity: 0; }
+     18%  { opacity: 1; }
+     55%  { opacity: 1; }
+     100% { opacity: 0; }
+   }
+   
+   /* ── Starthinweis ────────────────────────────────────────── */
+   #hint {
+     position: absolute;
+     bottom: 9%; left: 50%;
+     transform: translateX(-50%);
+     z-index: 50;
+     font-size: clamp(9px, 1.2vw, 11px);
+     letter-spacing: 0.5em;
+     text-transform: uppercase;
+     color: rgba(255,255,255,0.22);
+     pointer-events: none;
+     transition: opacity 2.5s ease;
+     animation: hintPulse 4.5s ease-in-out infinite;
+   }
+   #hint.hidden { opacity: 0 !important; animation: none; }
+   #app.world-2 #hint { color: rgba(60,200,185,0.25); }
+   #app.world-3 #hint { color: rgba(255,180,60,0.28); }
+   #app.world-4 #hint { color: rgba(140,185,255,0.25); }
+   
+   @keyframes hintPulse {
+     0%, 100% { opacity: 0.22; }
+     50%       { opacity: 0.55; }
+   }
+   
+   /* ── Custom Cursor ───────────────────────────────────────── */
+   #cursor {
+    display: none;
+     position: fixed;
+     width: 5px; height: 5px;
+     border-radius: 50%;
+     background: rgba(255,255,255,0.6);
+     z-index: 200; pointer-events: none;
+     transform: translate(-50%,-50%);
+     mix-blend-mode: screen;
+     transition: background 0.5s;
+   }
+   #app.world-1 #cursor { background: rgba(180,150,255,0.7); }
+   #app.world-2 #cursor { background: rgba(60,220,210,0.7); }
+   #app.world-3 #cursor { background: rgba(255,200,80,0.75); }
+   #app.world-4 #cursor { background: rgba(160,200,255,0.75); }
+   
+   @media (max-width: 600px) {
+     #hint { bottom: 7%; font-size: 9px; }
+     #cursor { display: none; }
+   }
+   
