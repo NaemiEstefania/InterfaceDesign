@@ -15,11 +15,11 @@
      targetProgress: 0,
      time: 0,
    
-     // Maus (normalisiert 0–1)
+     // Maus (normalisiert 0–1) — Start mittig (siehe FIX Problem 3)
      mouseX: 0.5,
-     mouseY: 0.4,
+     mouseY: 0.5,
      targetMouseX: 0.5,
-     targetMouseY: 0.4,
+     targetMouseY: 0.5,
    
      // Licht-Position in Pixeln
      lightX: 0,
@@ -383,7 +383,7 @@
        warpLines: false,
        // [innerMin, innerMax, glowMin, glowMax, haloMin, haloMax]
        // Halo-Max: ~200% Bildschirmbreite → füllt den Screen
-       lightSizes: [2, 180, 80, 1200, 200,3400],
+       lightSizes: [2, 80, 40, 600, 100, 1700],
    
        particleFactory(lx, ly) {
          const angle = Math.random() * Math.PI * 2;
@@ -412,11 +412,16 @@
        maxSpawn: 70,
        trailColor: 'rgba(0,0,8,0.07)',
        warpLines: true,
-       lightSizes: [3, 220, 120, 1400, 300, 3600],
+       lightSizes: [3, 120, 80, 800, 200, 2000],
    
        particleFactory(lx, ly, prog) {
          const angle  = Math.random() * Math.PI * 2;
-         const startR = 4 + Math.random() * 22;
+         // FIX (Problem 1): Spawn-Radius an aktuellen Kreis-Innendurchmesser koppeln.
+         // Vorher fester Wert (4–26px) → Partikel wirkten versetzt, sobald der Kreis wuchs.
+         // Jetzt: ~40% des Innenkreis-Radius → Partikel starten exakt aus der Kreismitte
+         // und treten am Rand des sichtbaren Lichtkerns aus.
+         const innerR  = getCurrentInnerRadius();
+         const startR  = innerR * (0.0 + Math.random() * 0.4);
          const speed  = 1.0 + Math.random() * 4.0 + prog * 5;
          const rnd    = Math.random();
          const color  = rnd < 0.5  ? [255,255,255]
@@ -773,39 +778,58 @@
    
    // ============================================================
    //  WARP-LINIEN (Cosmic Stream)
+   //  FIX: pCanvas (jeden Frame per clearRect geleert) statt tCanvas
+   //  (langsames Fade = Geister-Artefakte beim Bewegen des Lichts).
+   //  startR = aktueller Innenkreis-Radius → Strahlen am echten Kreisrand.
    // ============================================================
    function drawWarpLines() {
      if (state.world !== 1) return;
-     const prog  = state.progress / 100;
-     const lx    = state.lightX;
-     const ly    = state.lightY;
-     const count = Math.floor(6 + prog * 38);
-     const len   = 18 + prog * 200;
+     const prog   = state.progress / 100;
+     const lx     = state.lightX;
+     const ly     = state.lightY;
+     const count  = Math.floor(6 + prog * 38);
+     const len    = 18 + prog * 200;
+     const innerR = getCurrentInnerRadius();
    
-     tCtx.save();
+     pCtx.save();
      for (let i = 0; i < count; i++) {
        const angle  = (i / count) * Math.PI * 2 + state.time * 0.14;
-       const startR = 14 + Math.random() * 28;
+       const startR = innerR + Math.random() * 4;
        const endR   = startR + len * (0.35 + Math.random() * 0.65);
        const alpha  = (0.035 + prog * 0.12) * (0.4 + Math.random() * 0.6);
        const rnd    = Math.random();
        const col    = rnd < 0.5 ? `rgba(255,255,255,${alpha})`
                     : rnd < 0.8 ? `rgba(180,150,255,${alpha})`
                                  : `rgba(100,160,255,${alpha})`;
-       tCtx.beginPath();
-       tCtx.moveTo(lx + Math.cos(angle) * startR, ly + Math.sin(angle) * startR);
-       tCtx.lineTo(lx + Math.cos(angle) * endR,   ly + Math.sin(angle) * endR);
-       tCtx.strokeStyle = col;
-       tCtx.lineWidth   = 0.5 + Math.random() * 0.8;
-       tCtx.stroke();
+       pCtx.beginPath();
+       pCtx.moveTo(lx + Math.cos(angle) * startR, ly + Math.sin(angle) * startR);
+       pCtx.lineTo(lx + Math.cos(angle) * endR,   ly + Math.sin(angle) * endR);
+       pCtx.strokeStyle = col;
+       pCtx.lineWidth   = 0.5 + Math.random() * 0.8;
+       pCtx.stroke();
      }
-     tCtx.restore();
+     pCtx.restore();
    }
    
    // ============================================================
    //  LICHT — GRÖßE
    //  Bei progress=100 erreicht Halo >150% Bildschirmdiagonale
    // ============================================================
+   
+   // FIX (Problem 1): Aktuelle Innen-Lichtgröße cachen,
+   // damit der Cosmic-Particle-Factory den Spawn-Radius
+   // an die echte Kreisgröße koppeln kann.
+   // getCurrentInnerRadius(): berechnet den Innenkreis-Radius frame-synchron
+   // direkt aus state.progress — ohne CSS-DOM-Umweg (der 80ms hinterherhinkt).
+   // So stimmt der Strahlursprung exakt mit dem sichtbaren Kreisrand überein,
+   // egal wie schnell der Nutzer scrollt.
+   function getCurrentInnerRadius() {
+     const p  = state.progress / 100;
+     const sz = WORLDS[state.world].lightSizes;
+     const inner = sz[0] + (sz[1] - sz[0]) * p;
+     return inner * 0.5;
+   }
+   
    function updateLightSize() {
      const p  = state.progress / 100;
      const sz = WORLDS[state.world].lightSizes;
@@ -832,8 +856,11 @@
    
    // ============================================================
    //  LICHT — POSITION
-   //  Direktere Maussteuerung: Licht folgt fast dem ganzen Screen
-   //  Float/Nachzieh via Federsimulation
+   //  FIX (Problem 2): Licht bewegt sich AUSSCHLIESSLICH bei Mausbewegung.
+   //  Vorher: konstante Drift-Sinuskurven → Licht "schwirrte" eigenständig.
+   //  Jetzt: keine Eigenbewegung, kein Trägheits-Schwingen wenn die
+   //  Maus stillsteht. Sobald sich targetMouseX/Y nicht mehr ändert,
+   //  hält das Licht exakt seine Position.
    // ============================================================
    function updateLightPosition(dt) {
      // Maus sehr direkt annähern (0.085 statt 0.04)
@@ -846,25 +873,18 @@
      const targetX = margin * cw() + state.mouseX * cw() * (1 - 2 * margin);
      const targetY = margin * ch() + state.mouseY * ch() * (1 - 2 * margin);
    
-     // Subtile Eigenbewegung (Licht lebt)
-     const driftX  = Math.sin(state.time * 0.38) * 9  + Math.cos(state.time * 0.25) * 4;
-     const driftY  = Math.cos(state.time * 0.32) * 7  + Math.sin(state.time * 0.18) * 3;
+     // FIX (Problem 2): KEINE Drift mehr — Licht ist nur durch Maus gesteuert.
+     // Auch keine Feder-/Velocity-Simulation, denn die führt dazu, dass das
+     // Licht nach einer Mausbewegung noch eine Weile weiterschwingt.
+     // Stattdessen: weiches direktes Easing zur Zielposition.
+     // Wenn die Maus stillsteht, konvergiert die Zielposition → Licht bleibt stehen.
+     const ease = 0.12;   // 0 = gar nicht folgen, 1 = sofort springen
+     state.lightX += (targetX - state.lightX) * ease;
+     state.lightY += (targetY - state.lightY) * ease;
    
-     const finalTargetX = targetX + driftX;
-     const finalTargetY = targetY + driftY;
-   
-     // Federsimulation: weiches Nachziehen mit Trägheit
-     const stiffness = 4.5;   // Federstärke
-     const damping   = 0.72;  // Dämpfung (0=kein Dämpfer, 1=kein Überschwingen)
-   
-     const ax = (finalTargetX - state.lightX) * stiffness;
-     const ay = (finalTargetY - state.lightY) * stiffness;
-   
-     state.lightVX = (state.lightVX + ax * dt) * damping;
-     state.lightVY = (state.lightVY + ay * dt) * damping;
-   
-     state.lightX += state.lightVX * dt;
-     state.lightY += state.lightVY * dt;
+     // Velocity-Werte trotzdem mitführen für ggf. spätere Effekte (Snapping etc.)
+     state.lightVX = 0;
+     state.lightVY = 0;
    
      lightCore.style.left = `${state.lightX}px`;
      lightCore.style.top  = `${state.lightY}px`;
@@ -915,6 +935,17 @@
        }
    
        if (state.world === 4) initStarfield();
+   
+       // FIX (Problem 3): Licht bei jedem Weltentausch in die Bildschirmmitte zurücksetzen.
+       // Sowohl die echte Position als auch das Maus-Ziel müssen zurückgesetzt werden,
+       // sonst springt das Licht direkt nach dem Flash wieder zur letzten Mausposition.
+       // mouseX/Y = 0.5/0.5 → genau Mitte (vor der margin-Berechnung).
+       state.targetMouseX = 0.5;
+       state.targetMouseY = 0.5;
+       state.mouseX       = 0.5;
+       state.mouseY       = 0.5;
+       state.lightX       = cw() * 0.5;
+       state.lightY       = ch() * 0.5;
    
        // Licht-Velocity nullsetzen — kein Sprung
        state.lightVX = 0;
@@ -996,12 +1027,18 @@
        }
      }
    
-     updateTrail();
-     if (WORLDS[state.world].warpLines) drawWarpLines();
-     spawnParticlesForWorld(dt);
-     updateAndDrawParticles(dt);
+     // Reihenfolge wichtig:
+     // 1. progress → Lichtgröße berechnen (wird von drawWarpLines gebraucht)
+     // 2. Trail-Canvas faden
+     // 3. Partikel spawnen + zeichnen (enthält pCtx.clearRect am Anfang)
+     // 4. Warp-Linien auf pCanvas NACH dem clearRect zeichnen
+     // 5. Lichtposition updaten
      updateLightSize();
      updateLightPosition(dt);
+     updateTrail();
+     spawnParticlesForWorld(dt);
+     updateAndDrawParticles(dt);
+     if (WORLDS[state.world].warpLines) drawWarpLines();
      updateAudio(dt);
    
      requestAnimationFrame(loop);
@@ -1014,8 +1051,15 @@
      app.className = 'world-0';
      tCtx.clearRect(0, 0, cw(), ch());
    
-     state.lightX = cw() * 0.5;
-     state.lightY = ch() * 0.45;
+     // FIX (Problem 3): Start exakt mittig — gleiche Logik wie nach jedem Weltentausch.
+     // Vorher war Start bei y=0.45, das fühlte sich nach dem ersten Tausch
+     // (der jetzt mittig auf 0.5 zurücksetzt) inkonsistent an.
+     state.targetMouseX = 0.5;
+     state.targetMouseY = 0.5;
+     state.mouseX       = 0.5;
+     state.mouseY       = 0.5;
+     state.lightX       = cw() * 0.5;
+     state.lightY       = ch() * 0.5;
    
      for (let i = 0; i < 12; i++) spawnParticle();
    
@@ -1026,4 +1070,3 @@
    }
    
    init();
-   
