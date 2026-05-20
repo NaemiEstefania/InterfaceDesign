@@ -786,7 +786,7 @@
      if (state.world !== 1) return;
      const prog   = state.progress / 100;
      const lx     = state.lightX;
-     const ly     = state.lightY;
+    const ly     = state.lightY;
      const count  = Math.floor(6 + prog * 38);
      const len    = 18 + prog * 200;
      const innerR = getCurrentInnerRadius();
