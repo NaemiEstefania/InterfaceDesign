@@ -352,7 +352,7 @@
      font-size: clamp(9px, 1.2vw, 11px);
      letter-spacing: 0.5em;
      text-transform: uppercase;
-     color: rgba(255,255,255,0.22);
+     color: rgba(255,255,255,0.6);
      pointer-events: none;
      transition: opacity 2.5s ease;
      animation: hintPulse 4.5s ease-in-out infinite;
