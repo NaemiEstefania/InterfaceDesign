@@ -1070,3 +1070,50 @@
    }
    
    init();
+   /* ====== LICHTKUGEL-STEUERUNG (Grove Light Sensor) ====== */
+const LIGHT_MIN = 80;    // Kugel zu / dunkel  (dein Wert ~50)
+const LIGHT_MAX = 740;   // Kugel offen / hell (dein Wert ~760)
+
+let lightArmed = true;
+let wasTransitioning = false;
+
+function updateFromLight(raw) {
+  if (!state.interacted) {
+    state.interacted = true;
+    hint.classList.add('hidden');
+    unlockAudio();
+  }
+  if (state.transitioning) { wasTransitioning = true; return; }
+  if (wasTransitioning) { wasTransitioning = false; lightArmed = false; }
+
+  let t = (raw - LIGHT_MIN) / (LIGHT_MAX - LIGHT_MIN);
+  t = Math.max(0, Math.min(1, t));
+
+  if (!lightArmed) {
+    state.targetProgress = 0;
+    if (t < 0.2) lightArmed = true;
+    return;
+  }
+  state.targetProgress = t * 100;
+}
+
+async function connectLightBall() {
+  const port = await navigator.serial.requestPort();
+  await port.open({ baudRate: 115200 });
+  const decoder = new TextDecoderStream();
+  port.readable.pipeTo(decoder.writable);
+  const reader = decoder.readable.getReader();
+  let buffer = "";
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += value;
+    const lines = buffer.split("\n");
+    buffer = lines.pop();
+    for (const line of lines) {
+      const raw = Number(line.trim());
+      if (!isNaN(raw)) updateFromLight(raw);
+    }
+  }
+}
+document.getElementById("connectBtn").addEventListener("click", connectLightBall);
