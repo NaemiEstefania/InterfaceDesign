@@ -4,10 +4,37 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Infinite Light Worlds</title>
-  <!-- v4: Sound, Starfield, Größeres Licht, Cinematische Übergänge -->
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+
+  <!-- neu: Startscreen -->
+  <div id="startscreen">
+    <canvas id="ss-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;"></canvas>
+    <div class="ss-bg"></div>
+    <div class="ss-content">
+      <h1 class="ss-title">INFINITE LIGHT WORLDS</h1>
+      <p class="ss-subtitle">A physical light interface between darkness and worlds.</p>
+
+      <ol class="ss-instructions">
+        <li><span>01</span>Hold the Light Orb</li>
+        <li><span>02</span>Cover it to darken the world</li>
+        <li><span>03</span>Open it to collect light</li>
+        <li><span>04</span>Hold full light to open the next portal</li>
+      </ol>
+
+      <div class="ss-buttons">
+        <button class="ss-btn primary" id="btn-connect" onclick="startWithOrb()">
+          Connect Light Orb
+        </button>
+        <button class="ss-btn" onclick="startWithoutOrb()">
+          Start without Orb
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- END Startscreen -->
+
   <div id="app">
     <canvas id="trail-canvas"></canvas>
     <canvas id="particle-canvas"></canvas>
@@ -24,8 +51,182 @@
     <div id="cursor"></div>
     <div id="hint">move</div>
   </div>
-  <button id="connectBtn" style="position:fixed;top:12px;left:12px;z-index:300;">Kugel verbinden</button>
-   <!-- arduino added button -->
+
   <script src="script.js"></script>
+
+  <!-- ADDED: Startscreen Logik -->
+  <script>
+    function dismissStartscreen() { // Startbildschirm ausblenden
+      const ss = document.getElementById('startscreen');
+      ss.classList.add('fade-out');
+      setTimeout(() => ss.classList.add('hidden'), 1900); // Nach 2 Sekunden einen Hinweis anzeigen
+    }
+
+    function startWithOrb() {
+      dismissStartscreen();
+      // connectLightOrb ist in script.js definiert
+      setTimeout(() => connectLightOrb(), 400);
+    }
+
+    function startWithoutOrb() {
+      dismissStartscreen();
+      setTimeout(() => {
+        if (typeof startOrblessMode === 'function') startOrblessMode();
+        if (typeof showUXHint === 'function') {
+          showUXHint('Move the light. Collect energy.', 4000);
+        }
+      }, 2000);
+    }
+
+    // ── Startscreen Partikel-Animation ──────────────────────────
+    (function() {
+      const canvas = document.getElementById('ss-canvas'); // Holt das Canvas-Element aus dem HTML
+      const ctx    = canvas.getContext('2d'); // Erstellt den 2D-Zeichenkontext, Über "ctx" können Kreise, Linien usw. gezeichnet werden
+      canvas.width  = window.innerWidth; // Canvas soll beim Start die komplette Fenstergröße einnehmen
+      canvas.height = window.innerHeight;
+      window.addEventListener('resize', () => { // Reagiert auf Änderungen der Fenstergröße
+        canvas.width  = window.innerWidth; // Canvas auf neue Fenstergröße anpassen
+        canvas.height = window.innerHeight;
+        // Feste Partikel neu verteilen bei Resize
+        for (const p of staticParticles) { // Bereits existierende Partikel neu verteilen, amit sie nicht außerhalb des sichtbaren Bereichs liege
+          p.x = Math.random() * canvas.width; // Neue zufällige X-Position
+          p.y = Math.random() * canvas.height;  // Neue zufällige Y-Position
+        }
+      });
+
+      const COLORS = [ // Farbpalette für die Partikel
+        [255, 255, 255],
+        [160, 130, 255],
+        [0,   190, 175],
+        [255, 160,  40],
+        [180, 210, 255],
+        [255, 110, 170],
+      ];
+
+      // ── Feste Partikel — bleiben immer sichtbar ──────────────
+      const staticParticles = [];
+      for (let i = 0; i < 140; i++) {
+        const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+        staticParticles.push({
+          x:       Math.random() * canvas.width,
+          y:       Math.random() * canvas.height,
+          size:    0.4 + Math.random() * 1.6,
+          color,
+          alpha:   0.14 + Math.random() * 0.30,
+          twinkle: Math.random() * Math.PI * 2,
+          tSpeed:  0.006 + Math.random() * 0.016,
+        });
+      }
+
+      // ── Animierte Partikel — kommen und gehen ────────────────
+      const particles = [];
+
+      function spawn() {
+        const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+        const angle = Math.random() * Math.PI * 2;
+        const dist  = 60 + Math.random() * Math.max(canvas.width, canvas.height) * 0.52;
+        const cx    = canvas.width  * 0.5;
+        const cy    = canvas.height * 0.5;
+        const speed = 0.06 + Math.random() * 0.20;
+        return {
+          x: cx + Math.cos(angle) * dist,
+          y: cy + Math.sin(angle) * dist,
+          vx: (Math.random() - 0.5) * speed,
+          vy: -speed * 0.3 - Math.random() * speed * 0.4,
+          size:    0.8 + Math.random() * 2.8,
+          color,
+          alpha:   0.35 + Math.random() * 0.55,
+          life:    1,
+          maxLife: 5 + Math.random() * 9,
+          twinkle: Math.random() * Math.PI * 2,
+          tSpeed:  0.015 + Math.random() * 0.025,
+          attracted: Math.random() < 0.6,
+        };
+      }
+
+      for (let i = 0; i < 120; i++) {
+        const p = spawn();
+        p.life = Math.random() * p.maxLife;
+        particles.push(p);
+      }
+
+      function loop() {
+        const ss = document.getElementById('startscreen');
+        if (ss && ss.classList.contains('hidden')) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const cx = canvas.width  * 0.5;
+        const cy = canvas.height * 0.5;
+
+        // ── 1. Feste Partikel zeichnen (immer sichtbar) ──────────
+        for (const p of staticParticles) {
+          p.twinkle += p.tSpeed;
+          const twinkle = 0.5 + 0.5 * Math.sin(p.twinkle);
+          const a = p.alpha * twinkle;
+          const [r, g, b] = p.color;
+          const glowR = p.size * 6;
+          const grd   = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
+          grd.addColorStop(0,   `rgba(${r},${g},${b},${a})`);
+          grd.addColorStop(0.4, `rgba(${r},${g},${b},${a * 0.35})`);
+          grd.addColorStop(1,   `rgba(${r},${g},${b},0)`);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
+          ctx.fillStyle = grd;
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size * 0.45, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255,255,255,${Math.min(1, a * 1.2)})`;
+          ctx.fill();
+        }
+
+        // ── 2. Animierte Partikel zeichnen mathematische formel ───────────────────────
+        if (Math.random() < 0.10) particles.push(spawn());
+
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+
+          if (p.attracted) {
+            const dx = cx - p.x, dy = cy - p.y;
+            const d2 = dx * dx + dy * dy;
+            if (d2 > 100) { p.vx += dx * 0.00012; p.vy += dy * 0.00012; }
+          }
+
+          p.vx *= 0.992; p.vy *= 0.992;
+          p.x  += p.vx;  p.y  += p.vy;
+          p.life -= 0.016;
+          p.twinkle += p.tSpeed;
+
+          if (p.life <= 0) { particles.splice(i, 1); continue; }
+
+          const lr      = Math.max(0, p.life / p.maxLife);
+          const fadeIn  = Math.min(1, (p.maxLife - p.life) / 0.8);
+          const twinkle = 0.65 + 0.35 * Math.sin(p.twinkle);
+          const a       = p.alpha * lr * fadeIn * twinkle;
+          const [r, g, b] = p.color;
+
+          const glowR = p.size * 8;
+          const grd   = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
+          grd.addColorStop(0,   `rgba(${r},${g},${b},${a})`);
+          grd.addColorStop(0.3, `rgba(${r},${g},${b},${a * 0.5})`);
+          grd.addColorStop(0.7, `rgba(${r},${g},${b},${a * 0.15})`);
+          grd.addColorStop(1,   `rgba(${r},${g},${b},0)`);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
+          ctx.fillStyle = grd;
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size * 0.5, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255,255,255,${Math.min(1, a * 1.4)})`;
+          ctx.fill();
+        }
+
+        requestAnimationFrame(loop);
+      }
+      requestAnimationFrame(loop);
+    })();
+  </script>
+
 </body>
 </html>
