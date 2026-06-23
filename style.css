@@ -1,6 +1,6 @@
 /* ============================================================
-   INFINITE LIGHT WORLDS — style.css  v4
-   5 Welten: VOID SPACE · COSMIC STREAM · LIQUID LIGHT · BLOOM SPACE · STARFIELD
+   INFINITE LIGHT WORLDS style.css  v4
+  6 Welten: VOID SPACE - COSMIC STREAM - LIQUID LIGHT - BLOOM SPACE  - STARFIELD - NEUTRAL GLOW
    ============================================================ */
 
    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -22,7 +22,7 @@
      overflow: hidden;
    }
    
-   /* ── Canvas-Schichten ────────────────────────────────────── */
+   /* Canvas-Schichten  */
    #trail-canvas {
      position: absolute; inset: 0;
      width: 100%; height: 100%;
@@ -34,14 +34,14 @@
      z-index: 2; pointer-events: none;
    }
    
-   /* ── Welt-Hintergrund ────────────────────────────────────── */
+   /*  Welt-Hintergrund  */
    #world-bg {
      position: absolute; inset: 0;
      z-index: 0;
      transition: background 2.2s ease;
    }
    
-   /* VOID SPACE — absolute Schwärze, kein Streifen-Pseudo-Element */
+   /* VOID SPACE  absolute SchwÃrze, kein Streifen-Pseudo-Element */
    #app.world-0 #world-bg {
      background: #000;
    }
@@ -52,32 +52,32 @@
        radial-gradient(ellipse 100% 100% at 50% 50%, #00001c 0%, #00000a 55%, #000 100%);
    }
    
-   /* LIQUID LIGHT — dunkles Teal, kein weißes Licht mehr */
+   /* LIQUID LIGHT â€” dunkles Teal, kein weiÃŸes Licht mehr */
    #app.world-2 #world-bg {
      background:
        radial-gradient(ellipse 130% 100% at 50% 60%, #001014 0%, #000a0e 45%, #000 100%);
    }
    
-   /* BLOOM SPACE — warmes, tiefes Dunkelrot-Bernstein */
+   /* BLOOM SPACE â€” warmes, tiefes Dunkelrot-Bernstein */
    #app.world-3 #world-bg {
      background:
        radial-gradient(ellipse 120% 100% at 50% 60%, #0e0400 0%, #080200 45%, #000 100%);
    }
    
-   /* STARFIELD — tiefstes Weltraum-Schwarz mit zartem Blau-Schleier */
+   /* STARFIELD â€” tiefstes Weltraum-Schwarz mit zartem Blau-Schleier */
    #app.world-4 #world-bg {
      background:
        radial-gradient(ellipse 120% 120% at 50% 50%, #00010a 0%, #00000f 45%, #000 100%);
    }
    
-   /* ── Atmosphären ─────────────────────────────────────────── */
+   /*  AtmosphÃ¤ren  */
    #atmosphere {
      position: absolute; inset: 0;
      z-index: 3; pointer-events: none;
      transition: opacity 1.8s ease;
    }
    
-   /* VOID: fast nichts – totale Leere */
+   /* VOID: fast nichts totale Leere */
    #app.world-0 #atmosphere {
      background: none;
    }
@@ -90,7 +90,7 @@
        radial-gradient(ellipse 35% 35% at 85% 75%, rgba(15,35,100,0.12) 0%, transparent 60%);
    }
    
-   /* LIQUID: gedämpfte Teal-Flächen — deutlich dunkler als v2 */
+   /* LIQUID: gedÃmpfte Teal-FlÃchen deutlich dunkler als v2 */
    #app.world-2 #atmosphere {
      background:
        radial-gradient(ellipse 80% 60% at 25% 35%, rgba(0,50,65,0.12) 0%, transparent 65%),
@@ -98,7 +98,7 @@
        radial-gradient(ellipse 100% 45% at 50% 105%, rgba(0,18,35,0.4) 0%, transparent 55%);
    }
    
-   /* BLOOM: weiches warmes Glühen */
+   /* BLOOM: weiches warmes GlÃ¼hen */
    #app.world-3 #atmosphere {
      background:
        radial-gradient(ellipse 90% 70% at 50% 50%, rgba(60,20,0,0.25) 0%, transparent 65%),
@@ -115,7 +115,7 @@
        radial-gradient(ellipse 40% 30% at 80% 85%, rgba(5,15,50,0.1) 0%, transparent 55%);
    }
    
-   /* ── Liquid-Shimmer-Overlay ──────────────────────────────── */
+   /*  Liquid-Shimmer-Overlay */
    #liquid-overlay {
      position: absolute; inset: 0;
      z-index: 4; pointer-events: none;
@@ -162,13 +162,13 @@
      50%       { transform: scale(1.03) translateY(-8px); opacity: 1; }
    }
    
-   /* ── Das lebende Licht — Größen-Override für Screen-Fill ─── */
+   /* â”€â”€ Das lebende Licht â€” GrÃ¶ÃŸen-Override fÃ¼r Screen-Fill â”€â”€â”€ */
    /* JS setzt width/height direkt; hier nur die Basis-Transition */
    #light-inner, #light-glow, #light-halo {
      transition: width 0.08s linear, height 0.08s linear;
    }
    
-   /* ── Das lebende Licht — Atem-Animationen ────────────────── */
+   /* â”€â”€ Das lebende Licht â€” Atem-Animationen  */
    #light-core {
      position: absolute;
      left: 50%; top: 40%;
@@ -220,9 +220,9 @@
      50%       { transform: translate(-50%,-50%) scale(1.08); opacity: calc(var(--halo-op, 0.4) * 1.3); }
    }
    
-   /* ── Licht-Farben ────────────────────────────────────────── */
+   /* â”€â”€ Licht-Farben  */
    
-   /* VOID: kaltes Eisweiß */
+   /* VOID: kaltes EisweiÃŸ */
    #app.world-0 #light-inner {
      background: radial-gradient(circle, #fff 0%, #e4eeff 55%, #b8ccff 100%);
      box-shadow:
@@ -240,7 +240,7 @@
        rgba(155,190,255,0.04) 0%, transparent 70%);
    }
    
-   /* COSMIC: Weiß-Kern, violett-blauer Glow */
+   /* COSMIC: WeiÃŸ-Kern, violett-blauer Glow */
    #app.world-1 #light-inner {
      background: radial-gradient(circle, #fff 0%, #d8d0ff 40%, #7050ff 100%);
      box-shadow:
@@ -260,7 +260,7 @@
        rgba(130,100,255,0.08) 0%, rgba(70,50,200,0.03) 55%, transparent 100%);
    }
    
-   /* LIQUID: reduziertes Cyan – viel dunkler als v2 */
+   /* LIQUID: reduziertes Cyan â€“ viel dunkler als v2 */
    #app.world-2 #light-inner {
      background: radial-gradient(circle, #fff 0%, #c8f8f4 40%, #009890 100%);
      box-shadow:
@@ -280,7 +280,7 @@
        rgba(0,175,190,0.05) 0%, transparent 70%);
    }
    
-   /* BLOOM: warmes Gold-Orange-Weiß */
+   /* BLOOM: warmes Gold-Orange-WeiÃŸ */
    #app.world-3 #light-inner {
      background: radial-gradient(circle, #fff 0%, #fff0c8 40%, #ff9020 100%);
      box-shadow:
@@ -300,7 +300,7 @@
        rgba(255,160,30,0.08) 0%, rgba(180,80,0,0.03) 55%, transparent 100%);
    }
    
-   /* STARFIELD: kaltes Silber-Weiß-Blau, fast wie ein Stern */
+   /* STARFIELD: kaltes Silber-WeiÃŸ-Blau, fast wie ein Stern */
    #app.world-4 #light-inner {
      background: radial-gradient(circle, #fff 0%, #e8f0ff 45%, #8ab0ff 100%);
      box-shadow:
@@ -320,11 +320,53 @@
        rgba(120,170,255,0.06) 0%, rgba(60,110,220,0.02) 55%, transparent 100%);
    }
    
-   /* ── Flash-Overlay — sanfter Portal-Übergang ─────────────── */
+   /* NEURAL GLOW: warmes Pink-Magenta â€” wie WÃ¤rmebildkamera vom Gehirn */
+   #app.world-5 #world-bg {
+     background:
+       radial-gradient(ellipse 100% 100% at 50% 50%, #0e0008 0%, #08000a 50%, #000 100%);
+   }
+   #app.world-5 #atmosphere {
+     background:
+       radial-gradient(ellipse 80% 70% at 50% 50%, rgba(60,5,30,0.30) 0%, transparent 65%),
+       radial-gradient(ellipse 50% 40% at 25% 30%, rgba(80,10,40,0.12) 0%, transparent 60%),
+       radial-gradient(ellipse 50% 40% at 75% 70%, rgba(60,5,25,0.10) 0%, transparent 60%),
+       radial-gradient(ellipse 100% 40% at 50% 110%, rgba(40,0,20,0.50) 0%, transparent 55%);
+   }
+   #app.world-5 #liquid-overlay {
+     opacity: 1;
+     background: radial-gradient(ellipse 130% 80% at 50% 50%,
+       transparent 30%, rgba(100,20,60,0.05) 75%, transparent 100%);
+     animation: neuralPulse 4s ease-in-out infinite;
+   }
+   @keyframes neuralPulse {
+     0%, 100% { opacity: 0.4; transform: scale(1); }
+     50%       { opacity: 1;   transform: scale(1.03); }
+   }
+   #app.world-5 #light-inner {
+     background: radial-gradient(circle, #fff 0%, #ffe0f0 40%, #cc2080 100%);
+     box-shadow:
+       0 0 10px  5px  rgba(255,255,255,1),
+       0 0 35px  15px rgba(255,120,180,0.85),
+       0 0 90px  45px rgba(200,40,120,0.50),
+       0 0 200px 90px rgba(150,20,80,0.25),
+       0 0 400px 180px rgba(80,5,40,0.12);
+   }
+   #app.world-5 #light-glow {
+     background: radial-gradient(circle,
+       rgba(255,120,180,0.22) 0%, rgba(200,50,130,0.10) 40%,
+       rgba(120,20,70,0.04) 70%, transparent 100%);
+   }
+   #app.world-5 #light-halo {
+     background: radial-gradient(circle,
+       rgba(220,80,160,0.07) 0%, rgba(150,30,90,0.03) 55%, transparent 100%);
+   }
+   #app.world-5 #hint { color: rgba(255,120,180,0.50); }
+
+   /* Flash-Overlay â€” sanfter Portal-Übergang */
    #flash-overlay {
      position: absolute; inset: 0;
      z-index: 100;
-     /* Radial vom Licht-Zentrum aus — kein hartes Weiß, sondern weiches Licht */
+     /* Radial vom Licht-Zentrum aus â€” kein hartes WeiÃŸ, sondern weiches Licht */
      background: radial-gradient(circle at var(--flash-cx, 50%) var(--flash-cy, 40%),
        rgba(255,255,255,1) 0%,
        rgba(240,245,255,0.95) 25%,
@@ -343,7 +385,7 @@
      100% { opacity: 0; }
    }
    
-   /* ── Starthinweis ────────────────────────────────────────── */
+   /* Starthinweis  */
    #hint {
      position: absolute;
      bottom: 9%; left: 50%;
@@ -367,7 +409,7 @@
      50%       { opacity: 0.55; }
    }
    
-   /* ── Custom Cursor ───────────────────────────────────────── */
+   /* â”€â”€ Custom Cursor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
    #cursor {
     display: none;
      position: fixed;
@@ -389,3 +431,127 @@
      #cursor { display: none; }
    }
    
+
+   /* ============================================================
+      ADDED: Startscreen
+      Cinematischer Overlay über dem bestehenden Projekt.
+      Blendet nach Start sanft aus.
+   ============================================================ */
+   #startscreen {
+     position: fixed;
+     inset: 0;
+     z-index: 500;
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     justify-content: center;
+     background: #000;
+     transition: opacity 1.8s ease;
+     cursor: default;
+   }
+   #startscreen.fade-out {
+     opacity: 0;
+     pointer-events: none;
+   }
+   #startscreen.hidden {
+     display: none;
+   }
+
+   /* Partikel-Canvas hinter allem */
+   #ss-canvas {
+     position: absolute; inset: 0;
+     width: 100%; height: 100%;
+     pointer-events: none;
+   }
+
+   .ss-bg {
+     position: absolute; inset: 0;
+     background:
+       radial-gradient(ellipse 55% 55% at 50% 50%, rgba(255,255,255,0.05) 0%, transparent 68%),
+       radial-gradient(ellipse 30% 30% at 25% 30%, rgba(100,80,255,0.04) 0%, transparent 60%),
+       radial-gradient(ellipse 30% 30% at 75% 70%, rgba(255,120,80,0.03) 0%, transparent 60%);
+     animation: ssBreathe 6s ease-in-out infinite;
+   }
+   @keyframes ssBreathe {
+     0%, 100% { opacity: 0.5; transform: scale(1); }
+     50%       { opacity: 1;   transform: scale(1.06); }
+   }
+
+   .ss-content {
+     position: relative;
+     text-align: center;
+     max-width: 600px;
+     padding: 0 2rem;
+   }
+
+   .ss-title {
+     font-family: 'Georgia', serif;
+     font-size: clamp(28px, 5vw, 52px);
+     font-weight: normal;
+     letter-spacing: 0.18em;
+     color: rgba(255,255,255,0.92);
+     margin: 0 0 0.5rem;
+     animation: ssFadeIn 2s ease forwards;
+   }
+   .ss-subtitle {
+     font-family: 'Georgia', serif;
+     font-size: clamp(11px, 1.4vw, 14px);
+     letter-spacing: 0.25em;
+     color: rgba(255,255,255,0.35);
+     margin: 0 0 3rem;
+     animation: ssFadeIn 2.5s ease forwards;
+   }
+
+   .ss-instructions {
+     list-style: none;
+     margin: 0 0 3rem;
+     padding: 0;
+     animation: ssFadeIn 3s ease forwards;
+   }
+   .ss-instructions li {
+     font-family: 'Georgia', serif;
+     font-size: clamp(11px, 1.3vw, 13px);
+     letter-spacing: 0.15em;
+     color: rgba(255,255,255,0.40);
+     padding: 0.45rem 0;
+     border-bottom: 0.5px solid rgba(255,255,255,0.06);
+   }
+   .ss-instructions li:first-child { border-top: 0.5px solid rgba(255,255,255,0.06); }
+   .ss-instructions li span {
+     color: rgba(255,255,255,0.18);
+     margin-right: 0.8em;
+     font-size: 0.85em;
+   }
+
+   .ss-buttons {
+     display: flex;
+     gap: 1rem;
+     justify-content: center;
+     animation: ssFadeIn 3.5s ease forwards;
+   }
+   .ss-btn {
+     font-family: 'Georgia', serif;
+     font-size: clamp(10px, 1.2vw, 12px);
+     letter-spacing: 0.2em;
+     text-transform: uppercase;
+     border: 0.5px solid rgba(255,255,255,0.35);
+     background: transparent;
+     color: rgba(255,255,255,0.75);
+     padding: 0.85rem 2rem;
+     cursor: pointer;
+     transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+   }
+   .ss-btn:hover {
+     background: rgba(255,255,255,0.08);
+     border-color: rgba(255,255,255,0.7);
+     color: #fff;
+   }
+   .ss-btn.primary {
+     border-color: rgba(255,255,255,0.6);
+     color: rgba(255,255,255,0.9);
+   }
+
+   @keyframes ssFadeIn {
+     from { opacity: 0; transform: translateY(12px); }
+     to   { opacity: 1; transform: translateY(0); }
+   }
