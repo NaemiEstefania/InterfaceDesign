@@ -1,10 +1,33 @@
 /* ============================================================
-   INFINITE LIGHT WORLDS — script.js  v4
-   5 Welten · Sound (Web Audio API) · Starfield · Cinematische Übergänge
+   INFINITE LIGHT WORLDS — script.js  v4 code mit funktionallem ohne orb 
+   6 Welten · Sound (Web Audio API) - hihi Starfield - Cinematische Übergänge
    Direktere Maussteuerung · Licht füllt fast den Bildschirm
    ============================================================ */
 
    'use strict';
+
+   // ============================================================
+   // neu hinzugefügt: Sensor Calibration
+   // ── Kalibrierung im Präsentationsraum ──
+   // 1. Kugel komplett zuhalten → Wert im Serial Monitor ablesen → minDark
+   // 2. Kugel komplett öffnen   → Wert im Serial Monitor ablesen → maxBright
+   // 3. Werte dann eintragen und Seite neu laden
+   // ============================================================
+   const SENSOR_CONFIG = {
+     minDark:         20,   // ← kalibrierung: Wert wenn Kugel komplett dunkel
+     maxBright:       760,   // ← kalibrierung: Wert wenn Kugel im hellsten Licht
+     portalThreshold: 0.92,  // ab welchem Lichtniveau lädt das Portal (0–1)
+     resetThreshold:  0.20,  // wie dunkel muss es nach Wechsel sein (0–1)
+     holdTime:        1.5,   // Sekunden bei Maxlicht bis Weltenwechsel
+     smoothing:       0.08,  // Glättungsfaktor (0.05=träge, 0.15=direkt)
+   };
+
+   // neu: Interaction Mode
+   // 'waitForDark' = Startzustand: Kugel muss erst einmal abgedunkelt werden
+   let interactionMode = 'waitForDark'; // waitForDark | collecting | portal | resetRequired
+   let smoothedLight   = 0;
+   let hasDarkened     = false; // wird true sobald Sensor nach Connect wirklich dunkel war
+   let portalHoldTimer = 0;
 
    // ============================================================
    //  ZUSTAND
@@ -37,10 +60,10 @@
      audioUnlocked: false,
    };
    
-   const NUM_WORLDS = 5;
+   const NUM_WORLDS = 6; //angepasst auf 6
    
    // ============================================================
-   //  DOM
+   //  DOM ier holt alle HTML-Elemente,damit JavaScript später darauf zugreifen kann.
    // ============================================================
    const app          = document.getElementById('app');
    const pCanvas      = document.getElementById('particle-canvas');
@@ -67,13 +90,13 @@
    
    // ============================================================
    //  WEB AUDIO ENGINE
-   //  Erzeugt Ambient-Sounds rein synthetisch — kein externes Asset
+   //  Erzeugt Ambient-Sounds rein synthetisch — ohne externes Asset
    // ============================================================
    let audioCtx = null;
    
    /**
-    * Konfiguration für jeden Welt-Sound.
-    * Alle Parameter werden live interpoliert.
+    * Konfiguration für jeden Welt-Sound
+    * Alle Parameter werden live interpoliert
     */
    const SOUND_CONFIGS = [
      // 0 — VOID SPACE: tiefer Drone, dunkel, minimal
@@ -131,6 +154,17 @@
        filterFreq:   200,
        filterQ:      0.6,
      },
+     // 5 — NEURAL GLOW: elektrisch, pulsierend, warm-pink — wie Synapsen die feuern
+     {
+      droneFreqs:   [60, 120, 180, 240],
+      droneGains:   [0.08, 0.10, 0.08, 0.05],
+      shimmerFreq:  960,
+      shimmerGain:  0.055,
+      noiseGain:    0.010,
+      reverbTime:   2.5,
+      filterFreq:   1800,
+      filterQ:      4.0,
+    },
    ];
    
    // Aktive Audio-Nodes
@@ -278,8 +312,8 @@
    }
    
    /**
-    * Aktualisiert Lautstärke/Filter dynamisch je nach Progress.
-    * Wird jeden Frame aufgerufen.
+    * Aktualisiert Lautstärke/Filter dynamisch je nach Progress
+    * Wird jeden Frame aufgerufen
     */
    function updateAudio(dt) {
      if (!audioCtx || !audio.masterGain) return;
@@ -309,9 +343,9 @@
    }
    
    /**
-    * Übergangs-Klang: sanfter atmosphärischer Swell.
+    * Übergangs-Klang: sanfter atmosphärischer Swell
     * Kein Alarm — stattdessen tiefer Drone-Swell + hauchzartes Rauschen
-    * das aufsteigt und sich langsam auflöst wie Licht durch Nebel.
+    * das aufsteigt und sich langsam auflöst wie Licht durch Nebel
     */
    function playTransitionSound() {
     if (!audioCtx) return;
@@ -370,37 +404,37 @@
    }
    
    // ============================================================
-   //  WELT-DEFINITIONEN
+   //  WELT-DEFINITIONEN Jede Welt besitzt eigene Regeln für Partikel,Lichtgrößen, Farben und Effekte
    // ============================================================
    const WORLDS = [
    
      // ── 0 · VOID SPACE ────────────────────────────────────────
      {
        name: 'VOID SPACE',
-       baseSpawn: 0.5,
-       maxSpawn: 3.5,
-       trailColor: 'rgba(0,0,0,1)',   // vollständig löschen → kein Artefakt
-       warpLines: false,
+       baseSpawn: 0.5, // Je höher der Wert, desto mehr Partikel entstehen
+       maxSpawn: 3.5, // Maximale Spawnrate bei hoher Energie
+       trailColor: 'rgba(0,0,0,1)',   // vollständig löschen → kein Artefakt // Farbe der Trail-Ebene (Lichtspur)
+       warpLines: false,  // Warp-Linien deaktiviert
        // [innerMin, innerMax, glowMin, glowMax, haloMin, haloMax]
        // Halo-Max: ~200% Bildschirmbreite → füllt den Screen
-       lightSizes: [2, 80, 40, 600, 100, 1700],
+       lightSizes: [1, 800, 80, 6000, 200, 1400],  // Größen des Lichtorbs
    
-       particleFactory(lx, ly) {
-         const angle = Math.random() * Math.PI * 2;
-         const dist  = 80 + Math.random() * cw() * 0.6;
-         return {
-           x: lx + Math.cos(angle) * dist,
-           y: ly + Math.sin(angle) * dist,
-           vx: (Math.random() - 0.5) * 0.1,
+       particleFactory(lx, ly) { // Erzeugt einen neuen Partikel
+         const angle = Math.random() * Math.PI * 2; // Zufälliger Winkel zwischen 0° und 360°
+         const dist  = 80 + Math.random() * cw() * 0.6;  // Abstand zum Lichtorb
+         return { // Neues Partikelobjekt zurückgeben
+           x: lx + Math.cos(angle) * dist,  // X-Position auf einem Kreis um den Lichtorb
+           y: ly + Math.sin(angle) * dist,  // Y-Position auf einem Kreis um den Lichtorb
+           vx: (Math.random() - 0.5) * 0.1, // Horizontale Geschwindigkeit
            vy: -0.05 - Math.random() * 0.14,
            size: 0.5 + Math.random() * 1.3,
            color: [255, 255, 255],
            alpha: 0.1 + Math.random() * 0.3,
-           maxLife: 6 + Math.random() * 8,
-           attracted: true,
+           maxLife: 6 + Math.random() * 8,  // Maximale Lebensdauer
+           attracted: true,  // Partikel wird vom Lichtorb angezogen
            attractStr: 0.0003 + Math.random() * 0.0004,
-           trail: false,
-           type: 'dot',
+           trail: false,  // Keine Lichtspur hinter dem Partikel
+           type: 'dot',  // Typ des Partikels
          };
        },
      },
@@ -412,7 +446,7 @@
        maxSpawn: 70,
        trailColor: 'rgba(0,0,8,0.07)',
        warpLines: true,
-       lightSizes: [3, 120, 80, 800, 200, 2000],
+       lightSizes: [3, 800, 80, 6000, 200, 14000],
    
        particleFactory(lx, ly, prog) {
          const angle  = Math.random() * Math.PI * 2;
@@ -451,7 +485,7 @@
        maxSpawn: 20,
        trailColor: 'rgba(0,5,8,0.12)',
        warpLines: false,
-       lightSizes: [4, 58, 80, 720, 220, 1850],
+       lightSizes: [4, 800, 80, 6000, 200, 14000],
    
        particleFactory(lx, ly) {
          const angle = Math.random() * Math.PI * 2;
@@ -489,7 +523,7 @@
        maxSpawn: 30,
        trailColor: 'rgba(4,1,0,0.1)',
        warpLines: false,
-       lightSizes: [4, 62, 85, 750, 240, 2000],
+       lightSizes: [4, 800, 80, 6000, 200, 14000],
    
        particleFactory(lx, ly) {
          const isPetal = Math.random() < 0.35;
@@ -530,11 +564,11 @@
      // ── 4 · STARFIELD ─────────────────────────────────────────
      {
        name: 'STARFIELD',
-       baseSpawn: 1.5,
-       maxSpawn: 12,
-       trailColor: 'rgba(0,0,5,0.04)',   // sehr langsames Ausblenden → lange Trails
+       baseSpawn: 0.5, // wie viel partikel pro sekunde
+       maxSpawn: 5,// wie viele am ende wenn du nah dran bist
+       trailColor: 'rgba(0,0,3,0.08)', // Sternschnuppen-Schweif bleibt länger sichtbar
        warpLines: false,
-       lightSizes: [3, 50, 60, 650, 140, 1700],
+       lightSizes: [3, 800, 80, 6000, 200, 14000],
    
        particleFactory(lx, ly, prog) {
          // Sterne verteilen sich über den ganzen Bildschirm
@@ -552,28 +586,69 @@
                          : rnd < 0.90 ? [180,200,240]        // silbriges Blau
                                       : [240,248,255];        // fast weiß
    
-         // Manche Sterne bekommen Trails (die nahen)
-         const hasTrail  = depth < 0.3 && Math.random() < 0.4;
-   
-         return {
-           x: Math.random() * cw(),   // über ganzen Screen verteilt
-           y: Math.random() * ch(),
-           // Sehr langsame Eigenbewegung
-           vx: (Math.random() - 0.5) * speed * 0.3,
-           vy: -speed * 0.15,
-           size: (1.0 - depth * 0.7) * (0.5 + Math.random() * 2.5),
-           color,
-           alpha: 0.3 + (1 - depth) * 0.5 + Math.random() * 0.2,
-           maxLife: 8 + Math.random() * 12,
-           attracted: depth < 0.5,    // nur nahe Sterne werden angezogen
-           attractStr: (1 - depth) * 0.0002,
-           trail: hasTrail,
-           trailAlpha: 0.08 + Math.random() * 0.12,
-           depth,
-           type: 'starpoint',
-         };
+         // Alle Sterne bekommen Schweif — nah = lang & hell, weit = kurz & kaum sichtbar
+        const shootSpeed = speed * (1.5 + Math.random() * 1.5);
+
+        return {
+          x: Math.random() * cw(),
+          y: Math.random() * ch(),
+          vx: (Math.random() - 0.5) * shootSpeed * 0.4,
+          vy: -shootSpeed * 0.2 - Math.random() * shootSpeed * 0.15,
+          size: (1.0 - depth * 0.75) * (0.4 + Math.random() * 1.8),
+          color,
+          alpha: 0.35 + (1 - depth) * 0.55 + Math.random() * 0.1,
+          maxLife: 6 + Math.random() * 10,
+          attracted: depth < 0.5,
+          attractStr: (1 - depth) * 0.0002,
+          trail: true,
+          trailAlpha: (1 - depth) * 0.35 + 0.04,
+          depth,
+          type: 'starpoint',
+        };
        },
      },
+     // ── 5 · NEURAL GLOW ───────────────────────────────────────
+     // Licht im menschlichen Gehirn. Elektrische Impulse, Synapsen
+     // die feuern, Gedanken die entstehen.
+     // Farben: warm-Pink, Gelb, Orange, Magenta — wie Wärmebildkamera.
+     // Keine Trails — nur pure blitzende Lichtpunkte.
+     {
+      name: 'NEURAL GLOW',
+      baseSpawn: 4,
+      maxSpawn: 55,
+      trailColor: 'rgba(8,2,4,0.15)',
+      warpLines: false,
+      lightSizes: [3, 800, 80, 6000, 200, 14000],
+
+      particleFactory(lx, ly, prog) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist  = 20 + Math.random() * cw() * 0.65;
+        const type  = Math.random() < 0.70 ? 'synapse' : 'axon';
+        const crnd  = Math.random();
+        const color = crnd < 0.30 ? [255,120,180]
+                    : crnd < 0.55 ? [255,200,80]
+                    : crnd < 0.74 ? [255,140,60]
+                    : crnd < 0.88 ? [220,80,160]
+                                  : [255,240,160];
+        const speed = type === 'synapse'
+          ? 0.8 + Math.random() * 3.5 + prog * 3
+          : 1.5 + Math.random() * 4.0 + prog * 4;
+        return {
+          x: lx + Math.cos(angle) * dist,
+          y: ly + Math.sin(angle) * dist,
+          vx: Math.cos(angle) * speed * (Math.random() < 0.5 ? 1 : -0.6),
+          vy: Math.sin(angle) * speed * (Math.random() < 0.5 ? 1 : -0.6),
+          size: type === 'synapse' ? 0.8 + Math.random() * 2.5 : 0.4 + Math.random() * 1.0,
+          color,
+          alpha: 0.5 + Math.random() * 0.5,
+          maxLife: type === 'synapse' ? 0.3 + Math.random() * 1.0 : 0.2 + Math.random() * 0.6,
+          attracted: type === 'synapse',
+          attractStr: 0.0008 + Math.random() * 0.0012,
+          trail: false,
+          type,
+        };
+      },
+    },
    ];
    
    // ============================================================
@@ -600,7 +675,7 @@
    
    // Starfield füllt den Screen initial mit Sternen
    function initStarfield() {
-     for (let i = 0; i < 280; i++) spawnParticle();
+     for (let i = 0; i < 40; i++) spawnParticle();
    }
    
    function spawnParticlesForWorld(dt) {
@@ -635,37 +710,21 @@
    // ============================================================
    function drawStarPoint(p, a) {
      const [r, g, b] = p.color;
-     // Sternförmig: kurze Strahlen in 4 Richtungen
-     pCtx.save();
-     pCtx.translate(p.x, p.y);
-     const rays = p.size > 1.8 ? 4 : 2;
-     const len  = p.size * (p.size > 1.5 ? 2.5 : 1.5);
-     pCtx.strokeStyle = `rgba(${r},${g},${b},${a * 0.7})`;
-     pCtx.lineWidth   = p.size * 0.4;
-     for (let i = 0; i < rays; i++) {
-       const ang = (i / rays) * Math.PI;
-       pCtx.beginPath();
-       pCtx.moveTo(Math.cos(ang) * -len, Math.sin(ang) * -len);
-       pCtx.lineTo(Math.cos(ang) * len,  Math.sin(ang) * len);
-       pCtx.stroke();
-     }
-     // Kern
+     // Kein Kreuz mehr — weicher Lichtpunkt wie echter Stern am Himmel
+     const glowR = p.size * 5;
+     const glow  = pCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
+     glow.addColorStop(0,    `rgba(${r},${g},${b},${a})`);
+     glow.addColorStop(0.25, `rgba(${r},${g},${b},${a * 0.5})`);
+     glow.addColorStop(1,    `rgba(${r},${g},${b},0)`);
      pCtx.beginPath();
-     pCtx.arc(0, 0, p.size * 0.6, 0, Math.PI * 2);
-     pCtx.fillStyle = `rgba(${r},${g},${b},${a})`;
+     pCtx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
+     pCtx.fillStyle = glow;
      pCtx.fill();
-     pCtx.restore();
-   
-     // Glow für helle Sterne
-     if (p.size > 1.2) {
-       const g2 = pCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 6);
-       g2.addColorStop(0, `rgba(${r},${g},${b},${a * 0.25})`);
-       g2.addColorStop(1, `rgba(${r},${g},${b},0)`);
-       pCtx.beginPath();
-       pCtx.arc(p.x, p.y, p.size * 6, 0, Math.PI * 2);
-       pCtx.fillStyle = g2;
-       pCtx.fill();
-     }
+     // Winziger harter Kern
+     pCtx.beginPath();
+     pCtx.arc(p.x, p.y, p.size * 0.5, 0, Math.PI * 2);
+     pCtx.fillStyle = `rgba(255,255,255,${a})`;
+     pCtx.fill();
    }
    
    function updateAndDrawParticles(dt) {
@@ -706,7 +765,7 @@
        // ── Trail auf Trail-Canvas ────────────────────────────
        if (p.trail) {
          tCtx.beginPath();
-         tCtx.moveTo(p.x - p.vx * 4, p.y - p.vy * 4);
+         tCtx.moveTo(p.x - p.vx * (p.type === 'starpoint' ? 1.5 : 4), p.y - p.vy * (p.type === 'starpoint' ? 1.5 : 4));//(Starfield) den kurzen Schweif, alle anderen Welten bleiben bei * 4.
          tCtx.lineTo(p.x, p.y);
          tCtx.strokeStyle = `rgba(${r},${g},${b},${(p.trailAlpha||0.3)*lifeRatio})`;
          tCtx.lineWidth   = p.size * 0.65;
@@ -765,6 +824,21 @@
            pCtx.fillStyle = g2;
            pCtx.fill();
          }
+        } else if (p.type === 'synapse' || p.type === 'axon') {
+          // Neural Glow: weicher Glow + harter Kern — wie feuernde Nervenzelle
+          const glowR = p.size * (p.type === 'synapse' ? 6 : 4);
+          const grd   = pCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
+          grd.addColorStop(0,   `rgba(${r},${g},${b},${a})`);
+          grd.addColorStop(0.3, `rgba(${r},${g},${b},${a * 0.5})`);
+          grd.addColorStop(1,   `rgba(${r},${g},${b},0)`);
+          pCtx.beginPath();
+          pCtx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
+          pCtx.fillStyle = grd;
+          pCtx.fill();
+          pCtx.beginPath();
+          pCtx.arc(p.x, p.y, p.size * 0.45, 0, Math.PI * 2);
+          pCtx.fillStyle = `rgba(255,255,255,${a})`;
+          pCtx.fill();
    
        } else {
          // dot (Void)
@@ -920,7 +994,10 @@
      // Welt wechseln beim Höhepunkt des Flashes (wenn alles weiß ist)
      // doFlash erreicht opacity:1 bei ~18% von 2.6s = ~470ms
      setTimeout(() => {
-       const nextWorld = (state.world + 1) % NUM_WORLDS;
+      let nextWorld;
+      do {
+        nextWorld = 1 + Math.floor(Math.random() * (NUM_WORLDS - 1));
+      } while (nextWorld === state.world); // zufälliger welt wechsel nur erste welt ist immer gleich
        state.world     = nextWorld;
        state.progress  = state.targetProgress = 0;
    
@@ -953,19 +1030,30 @@
    
        // Neue Welt Sound aufbauen (beginnt leise, blendet ein)
        if (state.audioUnlocked) buildAudioGraph(state.world);
+
+       // ADDED: Reset Required after Portal
+       interactionMode = 'resetRequired';
+       state.targetProgress = 0;
+       portalHoldTimer = 0;
+       showUXHint('Darken the Orb', 6000);
      }, 480);
-   
+
      setTimeout(() => { state.transitioning = false; }, 2800);
    }
    
    // ============================================================
    //  INTERAKTION
+   //  Nur zwei Eingaben:
+   //  1. Trackpad scrollen (vor/zurück) → Licht wird größer/kleiner
+   //  2. Maus bewegen → Licht verschiebt sich auf dem Bildschirm
+   //  Alles andere (Tastatur, Touch) wurde entfernt.
    // ============================================================
-   const SCROLL_SENSITIVITY = 0.048;
-   let touchLastY = 0;
-   
+   const SCROLL_SENSITIVITY = 0.024;
+
    function handleScroll(delta) {
      if (state.transitioning) return;
+     // waitForDark: Scroll soll erst möglich sein nach erster Abdunkelung
+     if (interactionMode === 'waitForDark') return;
      if (!state.interacted) {
        state.interacted = true;
        hint.classList.add('hidden');
@@ -976,40 +1064,19 @@
      ));
      if (Math.abs(delta) > 40) spawnScrollImpulse(Math.abs(delta) / 110);
    }
-   
+
+   // Trackpad/Mausrad scrollen → Annäherung ans Licht
    window.addEventListener('wheel', e => {
      e.preventDefault();
      handleScroll(e.deltaY * 0.45);
    }, { passive: false });
-   
-   window.addEventListener('touchstart', e => {
-     touchLastY = e.touches[0].clientY;
-     if (!state.interacted) {
-       state.interacted = true;
-       hint.classList.add('hidden');
-       unlockAudio();
-     }
-   }, { passive: true });
-   
-   window.addEventListener('touchmove', e => {
-     e.preventDefault();
-     const y = e.touches[0].clientY;
-     state.targetMouseX = e.touches[0].clientX / window.innerWidth;
-     state.targetMouseY = e.touches[0].clientY / window.innerHeight;
-     handleScroll((touchLastY - y) * 1.6);
-     touchLastY = y;
-   }, { passive: false });
-   
+
+   // Maus bewegen → Lichtposition verschieben
    window.addEventListener('mousemove', e => {
      state.targetMouseX = e.clientX / window.innerWidth;
      state.targetMouseY = e.clientY / window.innerHeight;
      cursor.style.left  = `${e.clientX}px`;
      cursor.style.top   = `${e.clientY}px`;
-   });
-   
-   window.addEventListener('keydown', e => {
-     if (['ArrowDown','ArrowRight',' '].includes(e.key)) handleScroll(55);
-     if (['ArrowUp','ArrowLeft'].includes(e.key))        handleScroll(-55);
    });
    
    // ============================================================
@@ -1022,8 +1089,28 @@
    
      if (!state.transitioning) {
        state.progress += (state.targetProgress - state.progress) * 0.042;
+
+       // ADDED: Portal-Hold-Timer — Weltenwechsel nur nach gehaltener Maximalzeit
+       if (interactionMode === 'collecting' && smoothedLight > SENSOR_CONFIG.portalThreshold) {
+         portalHoldTimer += dt;
+         if (portalHoldTimer >= SENSOR_CONFIG.holdTime) {
+           portalHoldTimer = 0;
+           interactionMode = 'portal';
+           state.targetProgress = 100;
+           triggerWorldTransition();
+         }
+       } else {
+         portalHoldTimer = Math.max(0, portalHoldTimer - dt * 2);
+       }
+
+       // Fallback: Scroll-Steuerung ohne Orb
+       // interactionMode wird ignoriert wenn kein Orb verbunden —
+       // ohne Orb soll Scroll immer funktionieren
        if (state.targetProgress >= 100 && state.progress > 97) {
-         triggerWorldTransition();
+         if (interactionMode === 'collecting' || interactionMode === 'resetRequired') {
+           interactionMode = 'collecting'; // Reset automatisch aufheben
+           triggerWorldTransition();
+         }
        }
      }
    
@@ -1045,6 +1132,100 @@
    }
    
    // ============================================================
+   // ADDED: Arduino Integration
+   // ============================================================
+
+   // ADDED: UX Hints — atmosphärische Hinweise die automatisch ausblenden
+   function showUXHint(text, duration = 3000) {
+     hint.textContent = text;
+     hint.classList.remove('hidden');
+     clearTimeout(hint._hideTimer);
+     hint._hideTimer = setTimeout(() => hint.classList.add('hidden'), duration);
+   }
+
+   // ADDED: updateFromLight — verarbeitet rohe Sensorwerte vom Arduino
+   function updateFromLight(rawValue) {
+     if (!state.interacted) {
+       state.interacted = true;
+       hint.classList.add('hidden');
+       unlockAudio();
+     }
+
+     // Normalisieren auf 0–1 anhand kalibrierter Werte
+     let normalized = (rawValue - SENSOR_CONFIG.minDark)
+                    / (SENSOR_CONFIG.maxBright - SENSOR_CONFIG.minDark);
+     normalized = Math.max(0, Math.min(1, normalized));
+
+     // Glätten — verhindert Sprünge bei Sensorrauschen
+     smoothedLight += (normalized - smoothedLight) * SENSOR_CONFIG.smoothing;
+
+     // Quadratische Kurve: mehr Reaktion bei hohem Licht
+     const visualLight = smoothedLight * smoothedLight;
+
+     if (interactionMode === 'waitForDark') {
+       // Warte auf echte Abdunkelung:
+       // Schritt 1: Sensor muss erst hell gewesen sein (Kugel offen) — normalized > 0.5
+       // Schritt 2: Danach muss er dunkel werden — smoothedLight < resetThreshold
+       // Das verhindert false-trigger durch den Startwert 0
+       state.targetProgress = 0;
+       if (!hasDarkened && smoothedLight > 0.5) {
+         hasDarkened = true; // Kugel war offen — jetzt auf Abdunkelung warten
+       }
+       if (hasDarkened && smoothedLight < SENSOR_CONFIG.resetThreshold) {
+         interactionMode = 'collecting';
+         showUXHint('Collect Light', 3000);
+       }
+     } else if (interactionMode === 'collecting') {
+       state.targetProgress = visualLight * 100;
+     } else if (interactionMode === 'resetRequired') {
+       state.targetProgress = 0;
+       if (smoothedLight < SENSOR_CONFIG.resetThreshold) {
+         interactionMode = 'collecting';
+         showUXHint('Collect Light', 3000);
+       }
+     }
+   }
+
+   // Ohne Orb: interactionMode direkt auf collecting setzen
+   function startOrblessMode() {
+     interactionMode = 'collecting';
+   }
+
+   // ADDED: Web Serial API — Verbindung zum Arduino Yún
+   async function connectLightOrb() {
+     try {
+       const port = await navigator.serial.requestPort();
+       await port.open({ baudRate: 9600 });
+
+       const decoder = new TextDecoderStream();
+       port.readable.pipeTo(decoder.writable);
+       const reader = decoder.readable.getReader();
+
+       const btn = document.getElementById('btn-connect');
+       if (btn) btn.textContent = 'Connected ✓';
+       // Hinweis: Kugel erst abdunkeln um die erste Welt freizuschalten
+       setTimeout(() => showUXHint('Darken the Orb to begin', 5000), 2200);
+
+       let buffer = '';
+       while (true) {
+         const { value, done } = await reader.read();
+         if (done) break;
+         buffer += value;
+         const lines = buffer.split('\n');
+         buffer = lines.pop();
+         for (const line of lines) {
+           const raw = parseInt(line.trim(), 10);
+           if (!isNaN(raw)) updateFromLight(raw);
+         }
+       }
+     } catch (err) {
+       console.warn('Serial connection failed:', err);
+       const btn = document.getElementById('btn-connect');
+       if (btn) btn.textContent = 'Retry Connection';
+     }
+   }
+
+   // ============================================================
    //  INIT
    // ============================================================
    function init() {
@@ -1062,7 +1243,7 @@
      state.lightY       = ch() * 0.5;
    
      for (let i = 0; i < 12; i++) spawnParticle();
-   
+
      requestAnimationFrame(ts => {
        state.lastTimestamp = ts;
        loop(ts);
@@ -1070,52 +1251,3 @@
    }
    
    init();
-
-   
-   /* ====== LICHTKUGEL-STEUERUNG (Grove Light Sensor) ====== */
-const LIGHT_MIN = 80;    // Kugel zu / dunkel  (dein Wert ~50)
-const LIGHT_MAX = 740;   // Kugel offen / hell (dein Wert ~760)
-
-let lightArmed = true;
-let wasTransitioning = false;
-
-function updateFromLight(raw) {
-  if (!state.interacted) {
-    state.interacted = true;
-    hint.classList.add('hidden');
-    unlockAudio();
-  }
-  if (state.transitioning) { wasTransitioning = true; return; }
-  if (wasTransitioning) { wasTransitioning = false; lightArmed = false; }
-
-  let t = (raw - LIGHT_MIN) / (LIGHT_MAX - LIGHT_MIN);
-  t = Math.max(0, Math.min(1, t));
-
-  if (!lightArmed) {
-    state.targetProgress = 0;
-    if (t < 0.2) lightArmed = true;
-    return;
-  }
-  state.targetProgress = t * 100;
-}
-
-async function connectLightBall() {
-  const port = await navigator.serial.requestPort();
-  await port.open({ baudRate: 115200 });
-  const decoder = new TextDecoderStream();
-  port.readable.pipeTo(decoder.writable);
-  const reader = decoder.readable.getReader();
-  let buffer = "";
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += value;
-    const lines = buffer.split("\n");
-    buffer = lines.pop();
-    for (const line of lines) {
-      const raw = Number(line.trim());
-      if (!isNaN(raw)) updateFromLight(raw);
-    }
-  }
-}
-document.getElementById("connectBtn").addEventListener("click", connectLightBall);
