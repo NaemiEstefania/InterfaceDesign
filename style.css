@@ -162,13 +162,13 @@
      50%       { transform: scale(1.03) translateY(-8px); opacity: 1; }
    }
    
-   /* â”€â”€ Das lebende Licht â€” GrÃ¶ÃŸen-Override fÃ¼r Screen-Fill â”€â”€â”€ */
+   /* Das lebende Licht â€” GrÃ¶ÃŸen-Override fÃ¼r Screen-Fill  */
    /* JS setzt width/height direkt; hier nur die Basis-Transition */
    #light-inner, #light-glow, #light-halo {
      transition: width 0.08s linear, height 0.08s linear;
    }
    
-   /* â”€â”€ Das lebende Licht â€” Atem-Animationen  */
+   /*  Das lebende Licht Atem-Animationen  */
    #light-core {
      position: absolute;
      left: 50%; top: 40%;
