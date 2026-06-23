@@ -1070,6 +1070,8 @@
    }
    
    init();
+
+   
    /* ====== LICHTKUGEL-STEUERUNG (Grove Light Sensor) ====== */
 const LIGHT_MIN = 80;    // Kugel zu / dunkel  (dein Wert ~50)
 const LIGHT_MAX = 740;   // Kugel offen / hell (dein Wert ~760)
