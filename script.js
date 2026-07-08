@@ -14,8 +14,8 @@
    // 3. Werte dann eintragen und Seite neu laden
    // ============================================================
    const SENSOR_CONFIG = {
-     minDark:         20,   // ← kalibrierung: Wert wenn Kugel komplett dunkel
-     maxBright:       760,   // ← kalibrierung: Wert wenn Kugel im hellsten Licht
+     minDark:         15,   // ← kalibrierung: Wert wenn Kugel komplett dunkel
+     maxBright:       119,   // ← kalibrierung: Wert wenn Kugel im hellsten Licht
      portalThreshold: 0.92,  // ab welchem Lichtniveau lädt das Portal (0–1)
      resetThreshold:  0.20,  // wie dunkel muss es nach Wechsel sein (0–1)
      holdTime:        1.5,   // Sekunden bei Maxlicht bis Weltenwechsel
